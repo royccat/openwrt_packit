@@ -12,6 +12,7 @@ BACKUP_DIR="/.reserved"
 BACKUP_NAME="openwrt_config.tar.gz"
 BACKUP_FILE="${BACKUP_DIR}/${BACKUP_NAME}"
 BACKUP_LIST='./etc/AdGuardHome.yaml \
+./etc/tinc/ \
 ./etc/adblocklist/ \
 ./etc/amule/ \
 ./etc/balance_irq \
