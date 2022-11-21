@@ -5,6 +5,13 @@ source make.env
 source public_funcs
 init_work_env
 
+# 默认是否开启软件FLOWOFFLOAD
+SW_FLOWOFFLOAD=0
+# 默认是否开启硬件FLOWOFFLOAD
+HW_FLOWOFFLOAD=0
+# 默认是否开启SFE
+SFE_FLOW=1
+
 PLATFORM=rockchip
 SOC=rk3568
 BOARD=r68s
@@ -31,11 +38,9 @@ TGT_IMG="${WORK_DIR}/openwrt_${SOC}_${BOARD}_${OPENWRT_VER}_k${KERNEL_VERSION}${
 
 # patches、scripts
 ####################################################################
-REGULATORY_DB="${PWD}/files/regulatory.db.tar.gz"
 CPUSTAT_SCRIPT="${PWD}/files/cpustat"
 CPUSTAT_SCRIPT_PY="${PWD}/files/cpustat.py"
-CPUSTAT_PATCH="${PWD}/files/luci-admin-status-index-html.patch"
-CPUSTAT_PATCH_02="${PWD}/files/luci-admin-status-index-html-02.patch"
+INDEX_PATCH_HOME="${PWD}/files/index.html.patches"
 GETCPU_SCRIPT="${PWD}/files/getcpu"
 KMOD="${PWD}/files/kmod"
 KMOD_BLACKLIST="${PWD}/files/kmod_blacklist"
@@ -52,9 +57,6 @@ BANNER="${PWD}/files/banner"
 FMW_HOME="${PWD}/files/firmware"
 SMB4_PATCH="${PWD}/files/smb4.11_enable_smb1.patch"
 SYSCTL_CUSTOM_CONF="${PWD}/files/99-custom.conf"
-
-# 20200403 add
-SND_MOD="${PWD}/files/rk3568/snd-rk3568"
 
 # 20200709 add
 COREMARK="${PWD}/files/coremark.sh"
@@ -103,8 +105,10 @@ DDBR="${PWD}/files/openwrt-ddbr"
 # 20220225 add
 SSH_CIPHERS="aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr,chacha20-poly1305@openssh.com"
 SSHD_CIPHERS="aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
-# 20220804 add
-BOARD_SCRIPT1="${PWD}/files/rk3568/r68s/50-pcie_eth_up"
+# 20220927 add
+BOARD_HOME="${PWD}/files/rk3568/r68s/board.d"
+# 20221001 add
+MODULES_HOME="${PWD}/files/rk3568/modules.d"
 ####################################################################
 
 check_depends

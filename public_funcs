@@ -615,7 +615,6 @@ function extract_rootfs_files() {
    (
        cd $TGT_ROOT/lib/firmware
        mv *.hcd brcm/ 2>/dev/null
-       [ -f "$REGULATORY_DB" ] && tar xzf "$REGULATORY_DB"
        cd brcm
 
        # gtking/gtking pro 采用 bcm4356 wifi/bluetooth 模块
@@ -944,36 +943,33 @@ EOF
 # CPU状态补丁
 function patch_admin_status_index_html() {
     echo "打补丁：[状态页面相关信息补丁] ... "
-    if [ "$PLATFORM" == "qemu-aarch64" ];then
-	(
-	   cd $TGT_ROOT/usr/lib/lua/luci/view/admin_status/ && \
-		   sed -e 's/pcdata(boardinfo.model or "?")/pcdata(boardinfo.model or "KVM Virtual Machine")/' -i index.htm && \
-		   sed -e "s/grep 'br-lan'/grep -E 'br-lan|eth0'/" -i index.htm
-        )
-    else
 	(
             cd $TGT_ROOT
             if [ ! -f usr/bin/perl ];then
                  echo "未发现 perl 实用程序, 放弃补丁!"
             else 
-                if [ -f "$CPUSTAT_PATCH" ];then 
-                     patch -p1 < ${CPUSTAT_PATCH} 
-                     if [ $? -ne 0 ];then
-                         echo "补丁失败!"
-                     else
-                         if [ -f "${CPUSTAT_PATCH_02}" ] ;then
-                             patch -p1 < ${CPUSTAT_PATCH_02}
-                             if [ $? -ne 0 ];then
-                                echo "补丁失败!"
-                             fi
-                         fi
-                     fi
+		if [ -d "${INDEX_PATCH_HOME}" ];then
+                   cp ./usr/lib/lua/luci/view/admin_status/index.htm ./usr/lib/lua/luci/view/admin_status/index.htm.bak
+		   ret=0
+		   for p in `echo ${INDEX_PATCH_HOME}/*.patch`;do
+                       patch -p1 < $p 
+		       if [ $? -ne 0 ];then
+                            echo "补丁失败，还原原始文件 ... "
+                            mv ./usr/lib/lua/luci/view/admin_status/index.htm.bak  ./usr/lib/lua/luci/view/admin_status/index.htm
+			    ret=1
+                            echo "已还原"
+			    break
+                       fi
+	           done
+		   if [ $ret -eq 0 ];then
+                        echo "补丁成功"
+			rm -f ./usr/lib/lua/luci/view/admin_status/index.htm.bak
+		   fi
                 fi
                 echo "完成"
             fi
             echo
         )
-    fi
 }
 
 # 写入 release 信息
@@ -1099,7 +1095,15 @@ function copy_supplement_files() {
         [ -n "$SYSINFO_SCRIPT" ] && [ -x ./bin/bash ] && [ -f "${SYSINFO_SCRIPT}" ] && cp -v "${SYSINFO_SCRIPT}" ./etc/profile.d/ && \
              sed -e "s/\/bin\/ash/\/bin\/bash/" -i ./etc/passwd && sed -e "s/\/bin\/ash/\/bin\/bash/" -i ./usr/libexec/login.sh
         
-        [ -n "$BOARD_SCRIPT1" ] && [ -f $BOARD_SCRIPT1 ] && cp -v $BOARD_SCRIPT1 ./etc/board.d/
+        [ -n "$BOARD_HOME" ] && [ -d $BOARD_HOME ] && cp -v $BOARD_HOME/* ./etc/board.d/
+
+	if [ -n "${RGB_HOME}" ] && [ -d ${RGB_HOME} ];then
+             cp -av ${RGB_HOME}/* ./
+	     # rgb custom config file
+	     if [ -n "${RGB_CONFIG}" ] && [ -f "${RGB_CONFIG}" ];then
+                 cp -v ${RGB_CONFIG} ./etc/config/rgb
+             fi
+        fi
 
         [ -f ./etc/sysupgrade.conf ] && \
              cat >> ./etc/sysupgrade.conf <<EOF
@@ -1181,7 +1185,7 @@ function adjust_openssh_config() {
 
 config rule
         option name 'drop-wan-ssh'
-        option src '*'
+        option src 'wan'
         option dest 'wan'
         option dest_port '22'
         option proto 'tcp'
@@ -1545,6 +1549,12 @@ function adjust_kernel_env() {
             done
             echo "完成"
         fi    
+
+	if [ -n "${MODULES_HOME}" ] && [ -d "${MODULES_HOME}" ];then
+            echo "启用自定义的内核模块 ... "
+	    cp -v ${MODULES_HOME}/* ./etc/modules.d/
+            echo "完成"
+        fi
 
         case $ps in 
             allwinner_h6|rockchip_rk3328|rockchip_rk3568|rockchip_rk3588) 
